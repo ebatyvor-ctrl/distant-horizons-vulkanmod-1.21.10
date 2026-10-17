@@ -21,17 +21,24 @@ jobs:
           java-version: '21'
           cache: 'gradle'
 
+      - name: Download Dependency Jars (DH & VulkanMod 1.21.10)
+        run: |
+          mkdir -p jars
+          echo "Скачиваем Distant Horizons 1.21.10..."
+          curl -L -s -o jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar https://cdn.modrinth.com/data/uCdwusMi/versions/CKJFSOC6/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
+          echo "Скачиваем VulkanMod 1.21.10..."
+          curl -L -s -o jars/VulkanMod_1.21.10-0.6.6.jar https://cdn.modrinth.com/data/JYQhtZtO/versions/jkDMvvWU/VulkanMod_1.21.10-0.6.6.jar
+          ls -la jars/
+
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
       - name: Build Mod with Gradle
-        run: ./gradlew build --no-daemon -x test
+        run: ./gradlew :vulkan:build -PmcVer="1.21.10" --no-daemon --stacktrace
 
       - name: Upload Built Jar
         uses: actions/upload-artifact@v4
         with:
           name: distant-horizons-vulkanmod-1.21.10-jar
-          path: |
-            build/libs/*.jar
-            vulkan/build/libs/*.jar
+          path: vulkan/build/libs/*.jar
           if-no-files-found: warn
