@@ -1,4 +1,4 @@
-name: Build Distant Horizons VulkanMod 1.21.10
+name: Build Fabric 1.21.10 Mod
 
 on:
   push:
@@ -26,37 +26,29 @@ jobs:
           sed -i '/org.gradle.java.home/d' gradle.properties
           sed -i 's/mcVer=1.21.11/mcVer=1.21.10/g' gradle.properties
 
-      - name: Download Dependency Jars (DH & VulkanMod 1.21.10)
+      - name: Download Dependencies
         run: |
           mkdir -p jars
-          echo "Downloading Distant Horizons 1.21.10..."
           curl -L -s -o jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar https://cdn.modrinth.com/data/uCdwusMi/versions/CKJFSOC6/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
-          echo "Downloading VulkanMod 1.21.10..."
           curl -L -s -o jars/VulkanMod_1.21.10-0.6.6.jar https://cdn.modrinth.com/data/JYQhtZtO/versions/jkDMvvWU/VulkanMod_1.21.10-0.6.6.jar
-          ls -la jars/
 
       - name: Make Gradlew Executable
         run: chmod +x gradlew
 
-      - name: Build Mod with Gradle
+      - name: Compile Fabric Mod
         run: |
           ./gradlew :vulkan:remapJar :vulkan:build -x test -PmcVer="1.21.10" -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon --stacktrace 2>&1 | tee build.log || true
-          echo "=== SEARCHING FOR ALL BUILT JARS ==="
-          mkdir -p final_output
-          find . -name "*.jar" ! -path "./jars/*" ! -path "./.gradle/*" -exec cp -v {} final_output/ \;
-          ls -la final_output/
+          mkdir -p output_single_mod
+          # Отбираем строго готовый релизный jar для Fabric (отсеивая dev, sources, javadoc)
+          TARGET=$(find vulkan/build/libs build/libs -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" ! -name "*-javadoc.jar" ! -name "*-all.jar" 2>/dev/null | head -n 1)
+          if [ -z "$TARGET" ]; then
+            TARGET=$(find . -name "*.jar" ! -path "./jars/*" ! -path "./.gradle/*" ! -name "*-sources.jar" ! -name "*-dev.jar" 2>/dev/null | head -n 1)
+          fi
+          cp -v "$TARGET" output_single_mod/DistantHorizons-VulkanMod-Fabric-1.21.10.jar
 
-      - name: Upload Build Log
-        if: always()
+      - name: Upload Single Fabric Jar
         uses: actions/upload-artifact@v4
         with:
-          name: gradle-build-log
-          path: build.log
-          if-no-files-found: warn
-
-      - name: Upload Built Jar
-        uses: actions/upload-artifact@v4
-        with:
-          name: distant-horizons-vulkanmod-1.21.10-jar
-          path: final_output/*.jar
-          if-no-files-found: warn
+          name: DistantHorizons-VulkanMod-Fabric-1.21.10
+          path: output_single_mod/DistantHorizons-VulkanMod-Fabric-1.21.10.jar
+          if-no-files-found: error
