@@ -51,10 +51,15 @@ jobs:
             https://cdn.modrinth.com/data/uCdwusMi/versions/CKJFSOC6/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
 
           curl -fL --retry 3 \
+            -o jars/DistantHorizons-3.0.3-b-1.21.10-fabric-neoforge.jar \
+            https://cdn.modrinth.com/data/uCdwusMi/versions/rKh9HEXg/DistantHorizons-3.0.3-b-1.21.10-fabric-neoforge.jar
+
+          curl -fL --retry 3 \
             -o jars/VulkanMod_1.21.10-0.6.6.jar \
             https://cdn.modrinth.com/data/JYQhtZtO/versions/jkDMvvWU/VulkanMod_1.21.10-0.6.6.jar
 
           unzip -tq jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
+          unzip -tq jars/DistantHorizons-3.0.3-b-1.21.10-fabric-neoforge.jar
           unzip -tq jars/VulkanMod_1.21.10-0.6.6.jar
 
       - name: Patch Distant Horizons for Android ARM64

@@ -157,7 +157,8 @@ public class VulkanRenderContext {
         }
 
         Pipeline.Builder builder = new Pipeline.Builder(DH_TERRAIN_FORMAT);
-        builder.compileShaders("dh_terrain", vertSource, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         // UBOs and samplers
         List<UBO> ubos = new ArrayList<>();
@@ -203,7 +204,7 @@ public class VulkanRenderContext {
         // Binding 1: LightMap sampler
         // VulkanMod hardcodes lightmap at texture slot 2 (see
         // VTextureSelector.setLightTexture())
-        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uLightMap", 2));
+        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uLightMap", 2, 1));
 
         builder.setUniforms(ubos, imageDescriptors);
 

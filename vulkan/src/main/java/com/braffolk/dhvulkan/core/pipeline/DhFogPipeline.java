@@ -188,7 +188,8 @@ public class DhFogPipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_fog.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.compileShaders("dh_fog_compute", vertSource, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         List<UBO> ubos = new ArrayList<>();
         AlignedStruct.Builder uboBuilder = new AlignedStruct.Builder();
@@ -236,7 +237,7 @@ public class DhFogPipeline {
         ubos.add(mainUbo);
 
         List<ImageDescriptor> imageDescriptors = new ArrayList<>();
-        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uDepthMap", FOG_DEPTH_TEXTURE_SLOT));
+        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uDepthMap", FOG_DEPTH_TEXTURE_SLOT, 1));
 
         builder.setUniforms(ubos, imageDescriptors);
         this.fogComputePipeline = builder.createGraphicsPipeline();
@@ -252,7 +253,8 @@ public class DhFogPipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_fog_apply.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.compileShaders("dh_fog_apply", vertSource, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         List<UBO> ubos = new ArrayList<>();
         AlignedStruct.Builder uboBuilder = new AlignedStruct.Builder();
@@ -263,8 +265,8 @@ public class DhFogPipeline {
         ubos.add(mainUbo);
 
         List<ImageDescriptor> imageDescriptors = new ArrayList<>();
-        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uFogTexture", FOG_COLOR_TEXTURE_SLOT));
-        imageDescriptors.add(new ImageDescriptor(2, "sampler2D", "uDepthTexture", FOG_APPLY_DEPTH_TEXTURE_SLOT));
+        imageDescriptors.add(new ImageDescriptor(1, "sampler2D", "uFogTexture", FOG_COLOR_TEXTURE_SLOT, 1));
+        imageDescriptors.add(new ImageDescriptor(2, "sampler2D", "uDepthTexture", FOG_APPLY_DEPTH_TEXTURE_SLOT, 1));
 
         builder.setUniforms(ubos, imageDescriptors);
         this.fogApplyPipeline = builder.createGraphicsPipeline();
