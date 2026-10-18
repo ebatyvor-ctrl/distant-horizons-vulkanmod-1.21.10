@@ -238,8 +238,8 @@ public class DhSsaoPipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_ssao.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         // UBO at binding 0: SSAO parameters
         List<UBO> ubos = new ArrayList<>();
@@ -285,8 +285,8 @@ public class DhSsaoPipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_ssao_apply.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         // UBO at binding 0: blur parameters
         List<UBO> ubos = new ArrayList<>();

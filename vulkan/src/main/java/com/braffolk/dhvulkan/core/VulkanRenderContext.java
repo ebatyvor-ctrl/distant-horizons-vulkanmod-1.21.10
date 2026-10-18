@@ -157,8 +157,8 @@ public class VulkanRenderContext {
         }
 
         Pipeline.Builder builder = new Pipeline.Builder(DH_TERRAIN_FORMAT);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         // UBOs and samplers
         List<UBO> ubos = new ArrayList<>();

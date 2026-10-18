@@ -138,8 +138,8 @@ public class DhCompositePipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_apply.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         // UBO at binding 0: mat4 uInvProj (64 bytes) + int uDebugMode (4 bytes) + int
         // uUseMcDepth (4 bytes)

@@ -297,5 +297,10 @@ public class VkRenderApiDefinition extends AbstractDhRenderApiDefinition {
         public IDhApiRenderableBoxGroup remove(long id) {
             return null; // Not yet implemented
         }
+
+        @Override
+        public void close() {
+            // This placeholder renderer owns no resources.
+        }
     }
 }

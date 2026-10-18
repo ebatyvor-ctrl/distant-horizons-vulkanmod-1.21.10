@@ -118,8 +118,8 @@ public class DhDepthReaderPipeline {
         String fragSource = readShaderResource("shaders/vulkan/dh_depth_read.frag");
 
         Pipeline.Builder builder = new Pipeline.Builder(QUAD_FORMAT);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.VERTEX_SHADER, vertSource);
-        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SpirvCompiler.ShaderKind.FRAGMENT_SHADER, fragSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.VERTEX_SHADER, vertSource);
+        builder.setShaderSrc(net.vulkanmod.vulkan.shader.SPIRVUtils.ShaderKind.FRAGMENT_SHADER, fragSource);
 
         List<UBO> ubos = new ArrayList<>();
         AlignedStruct.Builder uboBuilder = new AlignedStruct.Builder();

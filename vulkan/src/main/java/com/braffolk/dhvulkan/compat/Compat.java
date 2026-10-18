@@ -352,14 +352,8 @@ public final class Compat {
             net.vulkanmod.vulkan.shader.layout.AlignedStruct.Builder builder,
             String type, String name, int count,
             java.util.function.Supplier<net.vulkanmod.vulkan.util.MappedBuffer> bufferSupplier) {
-        #if MC_VER >= MC_1_21_1
-        net.vulkanmod.vulkan.shader.layout.Uniform.Info info =
-                net.vulkanmod.vulkan.shader.layout.Uniform.createUniformInfo(type, name, count);
-        info.setBufferSupplier(bufferSupplier);
-        builder.addUniformInfo(info);
-        #else
+        // The buffer supplier is attached after the UBO is built.
         builder.addUniformInfo(type, name, count);
-        #endif
     }
 
     // ========================= //
@@ -395,15 +389,15 @@ public final class Compat {
         #if MC_VER >= MC_1_21_1
         net.vulkanmod.vulkan.shader.layout.AlignedStruct.Builder pcBuilder =
                 new net.vulkanmod.vulkan.shader.layout.AlignedStruct.Builder();
-        net.vulkanmod.vulkan.shader.layout.Uniform.Info info =
-                net.vulkanmod.vulkan.shader.layout.Uniform.createUniformInfo(type, name, count);
-        info.setBufferSupplier(bufferSupplier);
-        pcBuilder.addUniformInfo(info);
+        pcBuilder.addUniformInfo(type, name, count);
         try {
+            net.vulkanmod.vulkan.shader.layout.PushConstants pushConstants =
+                    pcBuilder.buildPushConstant(0x00000001 | 0x00000010);
+            pushConstants.getUniforms().get(0).setSupplier(bufferSupplier);
             java.lang.reflect.Field pcField =
                     net.vulkanmod.vulkan.shader.Pipeline.Builder.class.getDeclaredField("pushConstants");
             pcField.setAccessible(true);
-            pcField.set(pipelineBuilder, pcBuilder.buildPushConstant());
+            pcField.set(pipelineBuilder, pushConstants);
         } catch (Exception e) {
             throw new RuntimeException("[DH-Vulkan] Failed to set push constants on pipeline builder", e);
         }
@@ -432,14 +426,12 @@ public final class Compat {
     public static void setUniformSuppliers(
             net.vulkanmod.vulkan.shader.descriptor.UBO ubo,
             java.util.Map<String, net.vulkanmod.vulkan.util.MappedBuffer> bufferMap) {
-        #if MC_VER < MC_1_21_1
         for (net.vulkanmod.vulkan.shader.layout.Uniform uniform : ubo.getUniforms()) {
             net.vulkanmod.vulkan.util.MappedBuffer mb = bufferMap.get(uniform.getName());
             if (mb != null) {
                 uniform.setSupplier(() -> mb);
             }
         }
-        #endif
     }
 
     // ========================= //
