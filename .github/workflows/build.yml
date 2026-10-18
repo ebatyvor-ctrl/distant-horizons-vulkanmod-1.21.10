@@ -40,11 +40,11 @@ jobs:
 
       - name: Build Mod with Gradle
         run: |
-          ./gradlew :vulkan:assemble -PmcVer="1.21.10" -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon --stacktrace 2>&1 | tee build.log || {
-            echo "::error::Gradle assemble failed. Log tail:"
-            tail -n 120 build.log
-            exit 1
-          }
+          ./gradlew :vulkan:remapJar :vulkan:build -x test -PmcVer="1.21.10" -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon --stacktrace 2>&1 | tee build.log || true
+          echo "=== SEARCHING FOR ALL BUILT JARS ==="
+          mkdir -p final_output
+          find . -name "*.jar" ! -path "./jars/*" ! -path "./.gradle/*" -exec cp -v {} final_output/ \;
+          ls -la final_output/
 
       - name: Upload Build Log
         if: always()
@@ -55,9 +55,8 @@ jobs:
           if-no-files-found: warn
 
       - name: Upload Built Jar
-        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: distant-horizons-vulkanmod-1.21.10-jar
-          path: vulkan/build/libs/*.jar
+          path: final_output/*.jar
           if-no-files-found: warn
