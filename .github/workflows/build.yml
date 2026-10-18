@@ -1,15 +1,19 @@
-name: Build Fabric 1.21.10 Mod
+name: Build Android DH and Fabric Bridge 1.21.10
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Repository
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           submodules: recursive
@@ -17,38 +21,143 @@ jobs:
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '21'
-          cache: 'gradle'
+          cache: gradle
 
-      - name: Fix gradle.properties
-        run: |
-          sed -i '/org.gradle.java.home/d' gradle.properties
-          sed -i 's/mcVer=1.21.11/mcVer=1.21.10/g' gradle.properties
+      - name: Install archive tools
+        run: sudo apt-get update && sudo apt-get install -y zip unzip
 
-      - name: Download Dependencies
+      - name: Prepare Minecraft 1.21.10 metadata
+        shell: bash
         run: |
+          set -euo pipefail
+
+          sed -i '/^org\.gradle\.java\.home=/d' gradle.properties
+          grep -q '^mcVer=1.21.10$' gradle.properties
+
+          # Use the exact target version in the Fabric metadata.
+          sed -i 's/"minecraft": "\*"/"minecraft": "${minecraft_version}"/' \
+            vulkan/src/main/resources/fabric.mod.json
+
+      - name: Download build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
           mkdir -p jars
-          curl -L -s -o jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar https://cdn.modrinth.com/data/uCdwusMi/versions/CKJFSOC6/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
-          curl -L -s -o jars/VulkanMod_1.21.10-0.6.6.jar https://cdn.modrinth.com/data/JYQhtZtO/versions/jkDMvvWU/VulkanMod_1.21.10-0.6.6.jar
 
-      - name: Make Gradlew Executable
-        run: chmod +x gradlew
+          curl -fL --retry 3 \
+            -o jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar \
+            https://cdn.modrinth.com/data/uCdwusMi/versions/CKJFSOC6/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
 
-      - name: Compile Fabric Mod
+          curl -fL --retry 3 \
+            -o jars/VulkanMod_1.21.10-0.6.6.jar \
+            https://cdn.modrinth.com/data/JYQhtZtO/versions/jkDMvvWU/VulkanMod_1.21.10-0.6.6.jar
+
+          unzip -tq jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar
+          unzip -tq jars/VulkanMod_1.21.10-0.6.6.jar
+
+      - name: Patch Distant Horizons for Android ARM64
+        shell: bash
         run: |
-          ./gradlew :vulkan:remapJar :vulkan:build -x test -PmcVer="1.21.10" -Dorg.gradle.java.home="$JAVA_HOME" --no-daemon --stacktrace 2>&1 | tee build.log || true
-          mkdir -p output_single_mod
-          # Отбираем строго готовый релизный jar для Fabric (отсеивая dev, sources, javadoc)
-          TARGET=$(find vulkan/build/libs build/libs -name "*.jar" ! -name "*-sources.jar" ! -name "*-dev.jar" ! -name "*-javadoc.jar" ! -name "*-all.jar" 2>/dev/null | head -n 1)
-          if [ -z "$TARGET" ]; then
-            TARGET=$(find . -name "*.jar" ! -path "./jars/*" ! -path "./.gradle/*" ! -name "*-sources.jar" ! -name "*-dev.jar" 2>/dev/null | head -n 1)
-          fi
-          cp -v "$TARGET" output_single_mod/DistantHorizons-VulkanMod-Fabric-1.21.10.jar
+          set -euo pipefail
 
-      - name: Upload Single Fabric Jar
+          DH="jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar"
+          ENTRY="linux/aarch64/libzstd-jni_dh-1.5.7-6.so"
+
+          # Android-compatible native library from the published -6 build.
+          curl -fL --retry 3 \
+            -o /tmp/zstd-dh-plugin.apk \
+            https://github.com/ZalithLauncher/NativeLibPlugin/releases/download/zstd_jni_1.5.7-6_dhcompat/zstd-jni.1.5.7-6.2026-07-13.build.apk
+
+          echo "a3579d007ca2d2bcb540effd28af56981a2a55974d1454f803a7c4208f53bbdc  /tmp/zstd-dh-plugin.apk" \
+            | sha256sum -c -
+
+          mkdir -p /tmp/zstd-dh-apk
+          unzip -q /tmp/zstd-dh-plugin.apk -d /tmp/zstd-dh-apk
+
+          SO="$(find /tmp/zstd-dh-apk -type f \
+            -path '*/arm64-v8a/*' \
+            -name 'libzstd-jni_dh-1.5.7-6.so' -print -quit)"
+
+          if [ -z "$SO" ]; then
+            SO="$(find /tmp/zstd-dh-apk -type f \
+              -path '*/arm64-v8a/*' \
+              -name '*zstd*.so' -print -quit)"
+          fi
+
+          if [ -z "$SO" ]; then
+            echo "::error::Android ARM64 Zstd library was not found in the APK."
+            find /tmp/zstd-dh-apk -type f -name '*.so' -print
+            exit 1
+          fi
+
+          unzip -Z1 "$DH" | grep -Fxq "$ENTRY"
+
+          mkdir -p /tmp/dh-patch/linux/aarch64
+          cp "$SO" "/tmp/dh-patch/$ENTRY"
+          touch "/tmp/dh-patch/$ENTRY"
+
+          (cd /tmp/dh-patch && zip -q -u \
+            "$GITHUB_WORKSPACE/$DH" "$ENTRY")
+
+          unzip -tq "$DH"
+
+          EXPECTED="$(sha256sum "/tmp/dh-patch/$ENTRY" | cut -d' ' -f1)"
+          ACTUAL="$(unzip -p "$DH" "$ENTRY" | sha256sum | cut -d' ' -f1)"
+          test "$EXPECTED" = "$ACTUAL"
+
+          echo "Android ARM64 Zstd library replacement verified."
+
+      - name: Build the Fabric bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          ./gradlew :vulkan:remapJar \
+            -PmcVer=1.21.10 \
+            -Dorg.gradle.java.home="$JAVA_HOME" \
+            --no-daemon --stacktrace 2>&1 | tee build.log
+
+          BRIDGE="$(find vulkan/build/libs -maxdepth 1 -type f \
+            -name 'DistantHorizons-VulkanMod-fabric-*-mc1.21.10.jar' \
+            ! -name '*-dev.jar' \
+            ! -name '*-sources.jar' \
+            ! -name '*-javadoc.jar' -print -quit)"
+
+          if [ -z "$BRIDGE" ]; then
+            echo "::error::The remapped Fabric bridge JAR was not produced."
+            find vulkan/build/libs -maxdepth 1 -type f -print || true
+            exit 1
+          fi
+
+          unzip -p "$BRIDGE" fabric.mod.json > /tmp/bridge-fabric.mod.json
+
+          grep -Fq '"id": "dh-vulkanmod"' /tmp/bridge-fabric.mod.json
+          grep -Fq '"minecraft": "1.21.10"' /tmp/bridge-fabric.mod.json
+
+          mkdir -p output
+
+          cp jars/DistantHorizons-2.4.5-b-1.21.10-fabric-neoforge.jar \
+            output/DistantHorizons-2.4.5-b-1.21.10-android-fixed.jar
+
+          cp "$BRIDGE" output/
+
+          echo "Final files:"
+          ls -lh output/
+
+      - name: Upload build log if failed
+        if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: DistantHorizons-VulkanMod-Fabric-1.21.10
-          path: output_single_mod/DistantHorizons-VulkanMod-Fabric-1.21.10.jar
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
+
+      - name: Upload fixed mod files
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DH-Android-Fabric-1.21.10-FIX
+          path: output/*.jar
           if-no-files-found: error
